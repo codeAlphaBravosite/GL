@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal Achiever</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="./icon-192x192.png" type="image/png">
+    <link rel="shortcut icon" href="./icon-192x192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./icon-192x192.png">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <style>
+        :root {
+            --primary-color: #0f172a; 
+            --primary-hover: #1e293b; 
+            --warning-color: #ef4444; 
+            --info-color: #3b82f6; 
+            --star-important-color: #facc15; 
+            --bg-color: #f8fafc;
+            --text-color: #0f172a; 
+            --text-light: #64748b; 
+            --card-bg: #ffffff;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --border-color: #e2e8f0; 
+            
+            --goal-done-bg: #eef2ff; 
+            --goal-done-text: var(--primary-color);
+            --goal-overdue-border: #ef4444; 
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; } 
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 1rem;
+        }
+
+        .container { max-width: 800px; margin: 1rem auto; }
+
+        .notice-area {
+            border-radius: 1rem; padding: 1rem; margin-bottom: 1.5rem;
+            border: 2px solid var(--primary-color); 
+            background-color: var(--card-bg);
+        }
+        .notice-grid {
+            display: grid; grid-template-columns: 1fr; 
+            gap: 1rem; 
+        }
+        @media (min-width: 650px) { 
+            .notice-grid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        }
+
+        .notice-item {
+            padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1.5px solid var(--border-color);
+            background-color: var(--card-bg);
+        }
+        .notice-item h4 { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--text-light);}
+        .notice-item p { color: var(--text-color); font-size: 0.95rem; font-weight: 500; }
+
+        .calendar-container {
+            padding: 0.75rem; border: 1.5px solid var(--border-color); 
+            border-radius: 0.5rem; background-color: var(--card-bg);
+        }
+        .calendar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; padding: 0 0.1rem;
+        }
+        .calendar-header button {
+            background: transparent; border: none; color: var(--primary-color);
+            padding: 0.4rem; border-radius: 50%; cursor: pointer;
+            font-size: 0.9rem; width: 2rem; height: 2rem;
+            display: flex; align-items: center; justify-content: center;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .calendar-header button:hover { background-color: #f1f5f9; }
+        .calendar-month-year { font-size: 1.1rem; font-weight: 600; color: var(--primary-color); }
+        
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day-name-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 0.5rem;}
+
+        .calendar-day, .calendar-day-name {
+            text-align: center; padding: 0.5rem 0.2rem; font-size: 0.85rem;
+            border-radius: 0.375rem; 
+        }
+        .calendar-day-name { font-weight: 500; color: var(--text-light); }
+        .calendar-day {
+            cursor: default; border: 1px solid transparent; 
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .calendar-day.other-month { color: #cbd5e1; font-weight: 300; } 
+        .calendar-day:not(.other-month):not(.current-day):hover {
+            background-color: #f8fafc; border-color: var(--border-color);
+        }
+        .calendar-day.current-day {
+            background-color: var(--primary-color); color: white; font-weight: bold;
+            border-color: var(--primary-hover);
+        }
+
+        .goal-section {
+            background: var(--card-bg); border-radius: 1rem; padding: 1.25rem;
+            margin-bottom: 2rem; box-shadow: var(--shadow); border: 1px solid var(--border-color);
+        }
+        .goal-section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1rem; padding-bottom: 0.75rem; 
+            border-bottom: 2px solid var(--primary-color); 
+        }
+        .goal-section-header h3 {
+            font-size: 1.25rem; color: var(--primary-color);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .active-goal-count {
+            font-size: 0.9rem; color: var(--text-light); margin-left: 0.5rem; font-weight: normal;
+        }
+        .add-goal-icon-btn { 
+            background: var(--primary-color); color: white; border: none;
+            border-radius: 50%; 
+            width: 2rem; height: 2rem; 
+            font-size: 0.9rem; 
+            cursor: pointer; display: inline-flex;
+            align-items: center; justify-content: center;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .add-goal-icon-btn:hover { background: var(--primary-hover); }
+
+        .goals-list { display: flex; flex-direction: column; gap: 1rem; }
+
+        .goal-card {
+            border: 1px solid var(--border-color); border-radius: 0.75rem;
+            padding: 1.25rem; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04); 
+            display: flex; flex-direction: column;
+            background-color: var(--card-bg); 
+            position: relative; 
+            /* Remove transition: background-color from here for FLIP, it's handled differently or can be added back if needed with care */
+        }
+        
+        .goal-card.status-done {
+            background-color: var(--goal-done-bg); 
+            /* transition for background color can be specific to status change if desired */
+            transition: background-color 0.3s ease-in-out;
+        }
+        .goal-card.status-done .goal-title { color: var(--goal-done-text); text-decoration: line-through; opacity: 0.7;}
+        
+        .goal-card.is-overdue:not(.status-done) { 
+            border-left: 4px solid var(--goal-overdue-border); 
+        }
+        
+        .goal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.6rem; } 
+        .goal-title { font-size: 1.15rem; font-weight: 600; color: var(--text-color); margin-right: 0.5rem; flex-grow: 1;} 
+        
+        .star-btn { 
+            position: absolute;
+            top: 0.75rem; 
+            right: 0.75rem; 
+            background: transparent;
+            border: none;
+            color: var(--text-light); 
+            font-size: 1.1rem; 
+            padding: 0.25rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: color 0.2s ease-in-out; /* Smooth star color change */
+        }
+        .star-btn:hover { color: var(--star-important-color); }
+        .star-btn.is-important .fas.fa-star { color: var(--star-important-color); }
+
+
+        .goal-description { 
+            font-size: 0.875rem; color: var(--text-light); margin-bottom: 0.85rem; 
+            max-height: 40px; overflow-y: auto;
+            scrollbar-width: thin; scrollbar-color: var(--border-color) transparent;
+        }
+        .goal-description::-webkit-scrollbar { width: 5px; }
+        .goal-description::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 3px; }
+
+        .goal-meta {
+            font-size: 0.8rem; color: var(--text-light); 
+            margin-bottom: 0.85rem; 
+            display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; 
+        }
+        
+        .goal-countdown { 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+            flex-wrap: wrap; 
+        }
+        .goal-countdown-part { 
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .goal-countdown .fa-hourglass-half, .goal-countdown .fa-calendar-alt { 
+            font-size: 0.8rem; 
+        }
+        .goal-countdown-text { font-size: 0.8rem; }
+        .goal-countdown.overdue .goal-countdown-text { color: var(--warning-color); font-weight: 600; }
+        .goal-countdown.today .goal-countdown-text { color: var(--info-color); font-weight: 600; }
+
+        .goal-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.75rem; 
+                         border-top: 1px solid var(--border-color); 
+                       }
+        .goal-action-btn {
+            background: transparent; border: 1px solid transparent; 
+            color: var(--text-light); 
+            padding: 0.4rem; border-radius: 0.3rem; cursor: pointer;
+            font-size: 0.9rem; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+            flex-grow: 0; width: 2rem; height: 2rem; 
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .goal-action-btn.toggle-done { 
+            flex-grow: 1; 
+            background-color: #f8fafc; 
+            border: 1px solid var(--border-color);
+            color: var(--primary-color);
+            width: auto; gap: 0.3rem; padding: 0.4rem 0.75rem;
+        }
+        .goal-action-btn.toggle-done:hover { background-color: var(--primary-color); color: white; }
+        .goal-action-btn.toggle-done.is-done { background-color: var(--border-color); color: var(--primary-color); } 
+        .goal-action-btn.toggle-done.is-done:hover { background-color: var(--primary-hover); color: white; }
+
+        .goal-action-btn.edit:hover, .goal-action-btn.delete:hover { 
+            background-color: #e5e7eb; 
+        }
+        .goal-action-btn.delete:hover { color: var(--warning-color); }
+
+        .modal {
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+            justify-content: center; align-items: center; z-index: 1000; padding: 1rem;
+            overflow-y: auto; 
+        }
+        .modal-content {
+            background: var(--card-bg); padding: 1.5rem; border-radius: 1rem; width: 100%;
+            max-width: 450px; box-shadow: var(--shadow); 
+            margin: 2rem auto; 
+        }
+        .modal-content h3 { margin-bottom: 1rem; font-size: 1.25rem; color: var(--primary-color);}
+        .modal label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; font-weight: 500; }
+        .modal input, .modal textarea, .modal select {
+            width: 100%; padding: 0.75rem; margin: 0.25rem 0 1rem 0;
+            border: 1px solid var(--border-color); border-radius: 0.5rem; font-size: 0.9rem;
+        }
+        .modal textarea { min-height: 70px; resize: vertical; }
+        .modal input:focus, .modal textarea:focus, .modal select:focus {
+            outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+        }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+        .modal button {
+            padding: 0.6rem 1.2rem; border: none; border-radius: 0.5rem;
+            cursor: pointer; font-weight: 500; font-size: 0.875rem;
+        }
+        .save-btn { background: var(--primary-color); color: white; }
+        .cancel-btn { background: #e2e8f0; color: var(--text-light); }
+
+        .no-goals { text-align: center; padding: 2rem; color: var(--text-light); font-style: italic; }
+
+        /* Styles for the custom delete button in the modal */
+        .modal-buttons .modal-btn-delete {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 0.6rem 1.2rem; /* Ensure consistent padding with other modal buttons */
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        .modal-buttons .modal-btn-delete:hover {
+            background-color: #d03838; /* A darker shade of warning */
+        }
+
+        /* Animation for goal card exiting (deletion) */
+        .goal-card.exiting {
+            animation: fadeOutCollapse 0.35s ease-out forwards;
+        }
+
+        @keyframes fadeOutCollapse {
+            0% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+                max-height: 250px; /* Estimate; adjust if cards can be taller */
+                padding-top: 1.25rem;
+                padding-bottom: 1.25rem;
+                margin-bottom: 1rem; /* From .goals-list gap */
+                border-top-width: 1px;
+                border-bottom-width: 1px;
+                border-left-width: 1px; /* or 4px if overdue */
+                border-right-width: 1px;
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50px) scale(0.9);
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                margin-bottom: 0;
+                border-width: 0;
+                overflow: hidden;
+            }
+        }
+
+        /* Initial state for new card appearance animation */
+        .goal-card.entering {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+    </style>
+</head>
+    
+<body>
+    <div class="container">
+        <div class="notice-area">
+            <div class="notice-grid" id="noticeGrid">
+                <div class="calendar-container" id="calendarContainer"></div>
+                <div class="notice-item"><h4>Weeks Left (Month)</h4><p id="weeksLeftMonth">-</p></div>
+                <div class="notice-item"><h4>Months Left (Year)</h4><p id="monthsLeftYear">-</p></div>
+            </div>
+        </div>
+
+        <div class="goal-section" id="goalSectionTarget">
+            <div class="goal-section-header">
+                <h3><i class="fas fa-bullseye"></i> My Goals <span id="activeGoalCountHeader" class="active-goal-count"></span></h3>
+                <button class="add-goal-icon-btn" onclick="openGoalFormModal(null)" title="Add New Goal">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="goals-list" id="myGoalsList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="goalFormModal">
+        <div class="modal-content">
+            <h3 id="goalModalTitle">Add New Goal</h3>
+            <input type="hidden" id="goalIdInput">
+            <label for="goalTitleInput">Title:</label>
+            <input type="text" id="goalTitleInput" placeholder="e.g., Learn Advanced JavaScript">
+            <label for="goalDescriptionInput">Description (Optional):</label>
+            <textarea id="goalDescriptionInput" placeholder="e.g., Complete an online course..." rows="3"></textarea>
+            <label for="goalDeadlineInput">Deadline (Optional):</label>
+            <input type="date" id="goalDeadlineInput">
+            <div class="modal-buttons">
+                <button class="save-btn" onclick="saveGoal()">Save Goal</button>
+                <button class="cancel-btn" onclick="closeGoalFormModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content">
+            <h3 id="deleteConfirmTitle"><i class="fas fa-exclamation-triangle" style="color: var(--warning-color);"></i> Confirm Deletion</h3>
+            <p id="deleteConfirmMessage" style="margin-bottom: 1.5rem; font-size: 0.95rem;">Are you sure you want to delete this goal? This action cannot be undone.</p>
+            <input type="hidden" id="goalIdToDeleteInput">
+            <div class="modal-buttons">
+                <button class="modal-btn-delete" id="confirmDeleteBtn">Delete Goal</button>
+                <button class="cancel-btn" id="cancelDeleteBtnModal">Cancel</button> 
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let userData = { goals: [] };
+        let currentCalendarDate = new Date(); 
+
+        const goalFormModal = document.getElementById('goalFormModal');
+        const goalModalTitle = document.getElementById('goalModalTitle');
+        const goalIdInput = document.getElementById('goalIdInput');
+        const goalTitleInput = document.getElementById('goalTitleInput');
+        const goalDescriptionInput = document.getElementById('goalDescriptionInput');
+        const goalDeadlineInput = document.getElementById('goalDeadlineInput');
+        const myGoalsList = document.getElementById('myGoalsList');
+        const activeGoalCountHeader = document.getElementById('activeGoalCountHeader');
+        const calendarContainer = document.getElementById('calendarContainer');
+        const goalSectionTarget = document.getElementById('goalSectionTarget');
+
+        // Delete Confirmation Modal Elements
+        const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+        const goalIdToDeleteInput = document.getElementById('goalIdToDeleteInput');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtnModal = document.getElementById('cancelDeleteBtnModal'); // Changed ID to avoid conflict
+        const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+
+
+        function renderCalendar(dateToDisplay) {
+            calendarContainer.innerHTML = ''; 
+
+            const year = dateToDisplay.getFullYear();
+            const month = dateToDisplay.getMonth(); 
+
+            const header = document.createElement('div');
+            header.className = 'calendar-header';
+            
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                renderCalendar(currentCalendarDate);
+            };
+
+            const monthYearText = document.createElement('span');
+            monthYearText.className = 'calendar-month-year';
+            monthYearText.textContent = `${dateToDisplay.toLocaleDateString('en-US', { month: 'long' })} ${year}`;
+
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.onclick = () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                renderCalendar(currentCalendarDate);
+            };
+
+            header.appendChild(prevButton);
+            header.appendChild(monthYearText);
+            header.appendChild(nextButton);
+            calendarContainer.appendChild(header);
+
+            const dayNameRow = document.createElement('div'); 
+            dayNameRow.className = 'calendar-day-name-row';
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayNames.forEach(name => {
+                const dayNameCell = document.createElement('div');
+                dayNameCell.className = 'calendar-day-name';
+                dayNameCell.textContent = name;
+                dayNameRow.appendChild(dayNameCell);
+            });
+            calendarContainer.appendChild(dayNameRow);
+
+            const grid = document.createElement('div');
+            grid.className = 'calendar-grid';
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            for (let i = 0; i < firstDayOfMonth; i++) { 
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day other-month'; 
+                grid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'calendar-day';
+                dayCell.textContent = day;
+                if (year === today.getFullYear() && month === today.getMonth() && day === today.getDate()) {
+                    dayCell.classList.add('current-day');
+                }
+                grid.appendChild(dayCell);
+            }
+            calendarContainer.appendChild(grid);
+        }
+
+        function loadUserData() {
+            const savedData = localStorage.getItem('goalAchieverDataV_FinalSmooth');
+            if (savedData) {
+                try {
+                    userData = JSON.parse(savedData);
+                    if (!Array.isArray(userData.goals)) userData.goals = [];
+                    userData.goals.forEach(goal => {
+                        if (typeof goal.isImportant === 'undefined') {
+                            goal.isImportant = false;
+                        }
+                    });
+                } catch (e) {
+                    console.error("Error parsing user data:", e);
+                    userData = { goals: [] }; 
+                }
+            }
+            renderAllGoals(); // This will handle initial render with potential animations if needed (though usually not on first load)
+            updateNotices();
+            renderCalendar(currentCalendarDate); 
+        }
+
+        function saveUserData() {
+            localStorage.setItem('goalAchieverDataV_FinalSmooth', JSON.stringify(userData));
+        }
+
+        function openGoalFormModal(goalToEdit = null) {
+             if (goalToEdit) {
+                goalModalTitle.textContent = 'Edit Goal';
+                goalIdInput.value = goalToEdit.id;
+                goalTitleInput.value = goalToEdit.title;
+                goalDescriptionInput.value = goalToEdit.description || '';
+                goalDeadlineInput.value = goalToEdit.deadline || '';
+            } else {
+                goalModalTitle.textContent = 'Add New Goal';
+                goalIdInput.value = '';
+                goalTitleInput.value = '';
+                goalDescriptionInput.value = '';
+                goalDeadlineInput.value = '';
+            }
+            goalFormModal.style.display = 'flex'; 
+            goalTitleInput.focus();
+        }
+        function closeGoalFormModal() { 
+            goalFormModal.style.display = 'none'; 
+        }
+
+        function saveGoal() {
+            const id = goalIdInput.value ? parseInt(goalIdInput.value) : Date.now();
+            const title = goalTitleInput.value.trim();
+            if (!title) { alert('Goal title is required.'); goalTitleInput.focus(); return; }
+
+            const goalData = {
+                title,
+                description: goalDescriptionInput.value.trim(),
+                type: 'general', 
+                status: 'todo',   
+                deadline: goalDeadlineInput.value || null,
+                isImportant: false 
+            };
+
+            const existingGoalIndex = userData.goals.findIndex(g => g.id === id);
+            if (existingGoalIndex > -1) {
+                const oldGoal = userData.goals[existingGoalIndex];
+                userData.goals[existingGoalIndex] = { 
+                    ...oldGoal, 
+                    title: goalData.title,
+                    description: goalData.description,
+                    deadline: goalData.deadline,
+                    updatedAt: new Date().toISOString() 
+                };
+            } else {
+                userData.goals.push({ ...goalData, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), isImportant: false }); // Ensure isImportant is set
+            }
+            saveUserData();
+            renderAllGoals();
+            updateNotices();
+            closeGoalFormModal();
+        }
+        
+        function editGoal(goalId) {
+            const goal = userData.goals.find(g => g.id === goalId);
+            if (goal) openGoalFormModal(goal);
+        }
+        
+        function calculateDaysLeft(deadlineString) {
+            if (!deadlineString) return { deadlineFormatted: '', countdownText: '', days: Infinity, weeks: 0, isOverdue: false, isToday: false };
+
+            const deadlineDate = new Date(deadlineString + 'T00:00:00Z'); // Ensure UTC for consistent date comparison
+            const deadlineFormatted = deadlineDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+            
+            const now = new Date();
+            const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            
+            const diffTime = deadlineDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            let countdownText = "";
+            let weeks = 0;
+            let isOverdue = false;
+            let isToday = false;
+
+            if (diffDays < 0) {
+                countdownText = `${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} overdue`;
+                isOverdue = true;
+            } else if (diffDays === 0) {
+                countdownText = "Due Today";
+                isToday = true;
+            } else {
+                countdownText = `${diffDays} day${diffDays !== 1 ? 's' : ''} left`;
+                if (diffDays >= 7) { 
+                    weeks = Math.floor(diffDays / 7);
+                    countdownText += ` (${weeks} wk${weeks !== 1 ? 's' : ''})`;
+                }
+            }
+            return { deadlineFormatted, countdownText, days: diffDays, weeks, isOverdue, isToday };
+        }
+
+        function renderGoalCard(goal) {
+            const card = document.createElement('div');
+            const deadlineInfo = calculateDaysLeft(goal.deadline);
+            card.className = `goal-card status-${goal.status}`;
+            if (goal.status !== 'done' && deadlineInfo.isOverdue) {
+                card.classList.add('is-overdue');
+            }
+            card.setAttribute('data-goal-id', String(goal.id)); // Ensure ID is string for attribute selector
+
+            const doneButtonText = goal.status === 'done' ? 'Re-open' : 'Mark Done';
+            const doneButtonIcon = goal.status === 'done' ? 'fa-undo-alt' : 'fa-check-circle';
+            
+            const starIconClass = goal.isImportant ? 'fas fa-star' : 'far fa-star';
+            const starButtonClass = goal.isImportant ? 'is-important' : '';
+
+            let deadlineHtml = '';
+            if (goal.deadline) {
+                deadlineHtml = `
+                    <span class="goal-countdown ${deadlineInfo.isOverdue ? 'overdue' : ''} ${deadlineInfo.isToday ? 'today' : ''}">
+                        <span class="goal-countdown-part">
+                            <i class="fas fa-calendar-alt"></i> ${deadlineInfo.deadlineFormatted} 
+                        </span>
+                        <span class="goal-countdown-part">
+                           &bull; <i class="fas fa-hourglass-half"></i> <span class="goal-countdown-text">${deadlineInfo.countdownText}</span>
+                        </span>
+                    </span>`;
+            }
+
+            card.innerHTML = `
+                <button class="star-btn ${starButtonClass}" onclick="toggleImportance(${goal.id})" title="${goal.isImportant ? 'Unmark as important' : 'Mark as important'}">
+                    <i class="${starIconClass}"></i>
+                </button>
+                <div class="goal-header">
+                    <h4 class="goal-title">${goal.title}</h4>
+                </div>
+                ${goal.description ? `<p class="goal-description">${goal.description.replace(/\n/g, '<br>')}</p>` : ''}
+                <div class="goal-meta">
+                    ${deadlineHtml}
+                </div>
+                <div class="goal-actions">
+                    <button class="goal-action-btn toggle-done ${goal.status === 'done' ? 'is-done' : ''}" onclick="toggleGoalDoneStatus(${goal.id})" title="${doneButtonText}">
+                        <i class="fas ${doneButtonIcon}"></i> ${doneButtonText}
+                    </button>
+                    <button class="goal-action-btn edit" onclick="editGoal(${goal.id})" title="Edit Goal">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="goal-action-btn delete" onclick="deleteGoal(${goal.id})" title="Delete Goal">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        function renderAllGoals() {
+            const firstPassPositions = new Map();
+            Array.from(myGoalsList.children).forEach(cardElement => {
+                const goalId = cardElement.dataset.goalId;
+                if (goalId && !cardElement.classList.contains('exiting')) {
+                    firstPassPositions.set(goalId, cardElement.getBoundingClientRect());
+                }
+            });
+
+            myGoalsList.innerHTML = ''; 
+
+            const sortedGoals = [...userData.goals].sort((a, b) => {
+                if (a.isImportant && !b.isImportant) return -1;
+                if (!a.isImportant && b.isImportant) return 1;
+                if (a.status === 'done' && b.status !== 'done') return 1;
+                if (a.status !== 'done' && b.status === 'done') return -1;
+                if (a.status === 'done' && b.status === 'done') {
+                    return new Date(b.updatedAt) - new Date(a.updatedAt);
+                }
+                const aDeadlineInfo = calculateDaysLeft(a.deadline);
+                const bDeadlineInfo = calculateDaysLeft(b.deadline);
+                if (aDeadlineInfo.days !== bDeadlineInfo.days) {
+                    return aDeadlineInfo.days - bDeadlineInfo.days;
+                }
+                return new Date(a.createdAt) - new Date(b.createdAt);
+            });
+
+            if (sortedGoals.length === 0) {
+                myGoalsList.innerHTML = '<p class="no-goals">No goals yet. Click "+" to start!</p>';
+            } else {
+                sortedGoals.forEach(goal => {
+                    const card = renderGoalCard(goal); 
+                    myGoalsList.appendChild(card);
+                });
+            }
+
+            Array.from(myGoalsList.children).forEach(cardElement => {
+                const goalId = cardElement.dataset.goalId;
+                if (!goalId) return;
+
+                const oldRect = firstPassPositions.get(goalId);
+
+                if (!oldRect) { 
+                    cardElement.classList.add('entering');
+                    requestAnimationFrame(() => { 
+                        cardElement.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                        cardElement.classList.remove('entering'); 
+                        cardElement.addEventListener('transitionend', () => {
+                            cardElement.style.transition = '';
+                        }, { once: true });
+                    });
+                } else { 
+                    const newRect = cardElement.getBoundingClientRect();
+                    const deltaX = oldRect.left - newRect.left;
+                    const deltaY = oldRect.top - newRect.top;
+
+                    if (deltaX !== 0 || deltaY !== 0) {
+                        cardElement.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                        cardElement.style.transition = 'none'; 
+
+                        requestAnimationFrame(() => { 
+                            cardElement.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                            cardElement.style.transform = 'translate(0, 0)';
+                            cardElement.addEventListener('transitionend', () => {
+                                cardElement.style.transform = '';
+                                cardElement.style.transition = '';
+                            }, { once: true });
+                        });
+                    }
+                }
+            });
+
+            const activeGoals = userData.goals.filter(g => g.status !== 'done').length;
+            activeGoalCountHeader.textContent = `(${activeGoals} Active)`;
+        }
+
+        function updateNotices() {
+            const now = new Date();
+            
+            const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const daysLeftInMonth = lastDayOfMonth.getDate() - now.getDate();
+            let weeksLeftText = "";
+            if (daysLeftInMonth >= 0) {
+                const fullWeeks = Math.floor(daysLeftInMonth / 7);
+                const remainingDays = daysLeftInMonth % 7;
+                if (fullWeeks > 0) weeksLeftText += `${fullWeeks} week${fullWeeks !== 1 ? 's' : ''}`;
+                if (remainingDays > 0) weeksLeftText += `${fullWeeks > 0 ? ', ' : ''}${remainingDays} day${remainingDays !== 1 ? 's' : ''}`;
+                if (weeksLeftText === "") weeksLeftText = (daysLeftInMonth === 0 && fullWeeks === 0) ? "Today is last day!" : "This week";
+                if(daysLeftInMonth === 0 && fullWeeks === 0 && remainingDays === 0) weeksLeftText = "Today is last day!";
+            } else { weeksLeftText = "End of month!"; } // Should not happen with correct logic
+             if (daysLeftInMonth < 0) { // If it's already past the last day of the month (e.g. on 31st of Feb if month logic was off)
+                weeksLeftText = "Month ended";
+            } else if (daysLeftInMonth === 0 && now.getDate() === lastDayOfMonth.getDate()) {
+                weeksLeftText = "Today is last day!";
+            }
+            document.getElementById('weeksLeftMonth').textContent = weeksLeftText || "0 days";
+
+
+            document.getElementById('monthsLeftYear').textContent = `${11 - now.getMonth()} month${(11 - now.getMonth()) !== 1 ? 's' : ''}`;
+        }
+        
+        function openDeleteConfirmModal(goalId, goalTitle) {
+            goalIdToDeleteInput.value = goalId;
+            deleteConfirmMessage.innerHTML = `Are you sure you want to delete the goal "<strong>${goalTitle.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong>"? This action cannot be undone.`; // Sanitize title
+            deleteConfirmModal.style.display = 'flex';
+        }
+
+        function closeDeleteConfirmModal() {
+            deleteConfirmModal.style.display = 'none';
+            goalIdToDeleteInput.value = '';
+        }
+
+        confirmDeleteBtn.onclick = () => {
+            const goalId = parseInt(goalIdToDeleteInput.value);
+            if (goalId) {
+                closeDeleteConfirmModal();
+                animateThenRemoveGoal(goalId);
+            }
+        };
+
+        cancelDeleteBtnModal.onclick = closeDeleteConfirmModal;
+
+
+        function deleteGoal(goalId) {
+            const goal = userData.goals.find(g => g.id === goalId);
+            if (goal) {
+                openDeleteConfirmModal(goalId, goal.title);
+            }
+        }
+
+        function animateThenRemoveGoal(goalId) {
+            const cardElement = myGoalsList.querySelector(`.goal-card[data-goal-id="${goalId}"]`);
+            if (cardElement) {
+                cardElement.classList.add('exiting');
+                
+                cardElement.addEventListener('animationend', function handleAnimationEnd() {
+                    cardElement.removeEventListener('animationend', handleAnimationEnd);
+                    
+                    userData.goals = userData.goals.filter(g => g.id !== goalId);
+                    saveUserData();
+                    // The card is visually gone. Re-render will rebuild the list without it
+                    // and apply FLIP to any other cards that might shift as a result.
+                    renderAllGoals(); 
+                    updateNotices();
+                }, { once: true });
+            } else {
+                // Fallback if card not found (e.g., rapid clicks or already removed)
+                userData.goals = userData.goals.filter(g => g.id !== goalId);
+                saveUserData();
+                renderAllGoals();
+                updateNotices();
+            }
+        }
+
+        function toggleGoalDoneStatus(goalId) {
+            const goal = userData.goals.find(g => g.id === goalId);
+            if (goal) {
+                goal.status = (goal.status === 'done') ? 'todo' : 'done';
+                goal.updatedAt = new Date().toISOString();
+                saveUserData(); 
+                renderAllGoals(); 
+                updateNotices();
+            }
+        }
+        
+        function toggleImportance(goalId) {
+            const goal = userData.goals.find(g => g.id === goalId);
+            if (goal) {
+                goal.isImportant = !goal.isImportant;
+                goal.updatedAt = new Date().toISOString(); 
+                saveUserData();
+                renderAllGoals(); 
+            }
+        }
+
+        window.addEventListener('load', () => {
+            loadUserData(); 
+            if (goalSectionTarget) {
+                goalSectionTarget.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (goalFormModal.style.display === 'flex') {
+                    closeGoalFormModal();
+                } else if (deleteConfirmModal.style.display === 'flex') {
+                    closeDeleteConfirmModal();
+                }
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js') 
+                    .then(reg => console.log('Service Worker registered.', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>
