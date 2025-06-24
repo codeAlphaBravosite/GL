@@ -1,4 +1,4 @@
-const VERSION = '1.0.8'; // Increment version for updates
+const VERSION = '1.0.9'; // Increment version for updates
 const CACHE_NAME = `goal-achiever-cache-${VERSION}`;
 
 const STATIC_CACHE_URLS = [
